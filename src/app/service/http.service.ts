@@ -12,15 +12,17 @@ export class AuthenticatedHttp {
         'Content-Type': 'application/json'
     });
 
-    private token: string | null;
+    private token: TokenResponse | undefined;
 
     // Why I can use this.http is absolutely black magic to me.
     constructor(private http: Http) {
-        // FIXME: this code assumes the token is still valid, which may not be the case. We need 
-        // to examine the token and determine whether or not it has expired. Maybe the easiest 
-        // way to do that is to just make a request to the server to say, "Hey, is this token
-        // good?" Then, if it is, great, and if not we need to authenticate.
-        this.token = localStorage.getItem(BEARER_TOKEN_KEY);
+        let localToken = localStorage.getItem(BEARER_TOKEN_KEY);
+        if (localToken) {
+            let parsedToken = JSON.parse(localToken);
+            if (isTokenResponse(parsedToken) && parsedToken.date < Date.now()) {
+                this.token = <TokenResponse>parsedToken;
+            }
+        }
     }
 
     // I am guessing that this function will attempt to get a token for this instance of the 
@@ -31,7 +33,7 @@ export class AuthenticatedHttp {
         let requestHeaders = { headers: this.headers };
         
         return this.http.post('/auth', requestBody, requestHeaders).toPromise()
-            .then(response => { this.token = response.toString(); })
+            .then(response => { this.token = response.json(); })
             .catch(e => console.log(e));
     }
 
@@ -63,4 +65,14 @@ export class AuthenticatedHttp {
     addContentTypeHeader(headers: Headers) {
         headers.append("Content-Type", "application/json");
     }
+}
+
+interface TokenResponse {
+    expiration: Date,
+    token: String,
+}
+
+function isTokenResponse(item: any) {
+    return item.expiration !== undefined
+        && item.token !== undefined
 }

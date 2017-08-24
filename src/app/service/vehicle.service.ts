@@ -1,4 +1,4 @@
-import { AuthenticatedHttp } from './auth.service';
+import { AuthenticatedHttp } from './http.service';
 import { Headers } from '@angular/http';
 import { Injectable } from '@angular/core';
 
