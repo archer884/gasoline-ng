@@ -33,7 +33,16 @@ export class AuthenticatedHttp {
         let requestHeaders = { headers: this.headers };
         
         return this.http.post('/auth', requestBody, requestHeaders).toPromise()
-            .then(response => { this.token = response.json(); })
+            .then(response => {
+                let tokenCandidate = response.json();
+
+                // I guess, at least in theory, this could be some kind of error message.
+                if (isTokenResponse(tokenCandidate)) {
+                    this.token = tokenCandidate;
+                } else {
+                    console.log("unexpected token response: " + response.toString());
+                }
+            })
             .catch(e => console.log(e));
     }
 
@@ -72,6 +81,9 @@ interface TokenResponse {
     token: String,
 }
 
+// This is a type guard. No, I'm serious. This is how you answer the question, "Hey, what type is
+// this?" in TypeScript/JavaScript. Why exactly this is a question we have to ask is a question 
+// I do not have an answer for.
 function isTokenResponse(item: any) {
     return item.expiration !== undefined
         && item.token !== undefined
